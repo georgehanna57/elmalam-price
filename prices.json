@@ -1,0 +1,225 @@
+{
+  "shopName": "المعلم",
+  "subtitle": "قائمة أسعار السجائر",
+  "phone": "01XXXXXXXXX",
+  "note": "الأسعار قابلة للتغيير حسب تحديثات السوق",
+  "products": [
+    {
+      "id": "1",
+      "name": "بوكس",
+      "category": "محلي",
+      "price": 485,
+      "details": ""
+    },
+    {
+      "id": "2",
+      "name": "كليوباترا",
+      "category": "محلي",
+      "price": 480,
+      "details": ""
+    },
+    {
+      "id": "3",
+      "name": "بوكس راوند",
+      "category": "محلي",
+      "price": "-",
+      "details": ""
+    },
+    {
+      "id": "4",
+      "name": "سوبر",
+      "category": "محلي",
+      "price": 510,
+      "details": ""
+    },
+    {
+      "id": "5",
+      "name": "ال ام أحمر",
+      "category": "محلي",
+      "price": 815,
+      "details": ""
+    },
+    {
+      "id": "6",
+      "name": "ال ام أزرق",
+      "category": "محلي",
+      "price": 815,
+      "details": ""
+    },
+    {
+      "id": "7",
+      "name": "ال ام أبيض",
+      "category": "محلي",
+      "price": 810,
+      "details": ""
+    },
+    {
+      "id": "8",
+      "name": "ال ام توت",
+      "category": "محلي",
+      "price": 810,
+      "details": ""
+    },
+    {
+      "id": "9",
+      "name": "مالبورو أحمر",
+      "category": "محلي",
+      "price": 1015,
+      "details": ""
+    },
+    {
+      "id": "10",
+      "name": "مالبورو أبيض",
+      "category": "محلي",
+      "price": 1015,
+      "details": ""
+    },
+    {
+      "id": "11",
+      "name": "مالبورو كرافتد",
+      "category": "محلي",
+      "price": 800,
+      "details": ""
+    },
+    {
+      "id": "12",
+      "name": "ميريت",
+      "category": "محلي",
+      "price": 1115,
+      "details": ""
+    },
+    {
+      "id": "13",
+      "name": "ونيستون أحمر",
+      "category": "محلي",
+      "price": 705,
+      "details": ""
+    },
+    {
+      "id": "14",
+      "name": "ونيستون أزرق",
+      "category": "محلي",
+      "price": 705,
+      "details": ""
+    },
+    {
+      "id": "15",
+      "name": "ونيستون أبيض",
+      "category": "محلي",
+      "price": 705,
+      "details": ""
+    },
+    {
+      "id": "16",
+      "name": "تارجت أحمر",
+      "category": "محلي",
+      "price": 470,
+      "details": ""
+    },
+    {
+      "id": "17",
+      "name": "تارجت أزرق",
+      "category": "محلي",
+      "price": 470,
+      "details": ""
+    },
+    {
+      "id": "18",
+      "name": "جولد كوست",
+      "category": "محلي",
+      "price": 480,
+      "details": ""
+    },
+    {
+      "id": "19",
+      "name": "كابتن بلاك أحمر قديم",
+      "category": "مستورد",
+      "price": 420,
+      "details": ""
+    },
+    {
+      "id": "20",
+      "name": "كابتن بلاك أحمر جديد",
+      "category": "مستورد",
+      "price": "-",
+      "details": ""
+    },
+    {
+      "id": "21",
+      "name": "كابتن بلاك أزرق جديد",
+      "category": "مستورد",
+      "price": 320,
+      "details": ""
+    },
+    {
+      "id": "22",
+      "name": "كابتن بلاك أزرق قديم",
+      "category": "مستورد",
+      "price": 470,
+      "details": ""
+    },
+    {
+      "id": "23",
+      "name": "اتش بي",
+      "category": "مستورد",
+      "price": 290,
+      "details": ""
+    },
+    {
+      "id": "24",
+      "name": "اي بي",
+      "category": "مستورد",
+      "price": 325,
+      "details": ""
+    },
+    {
+      "id": "25",
+      "name": "اي بي سوبر",
+      "category": "مستورد",
+      "price": 340,
+      "details": ""
+    },
+    {
+      "id": "26",
+      "name": "اتش بي سوبر",
+      "category": "مستورد",
+      "price": "-",
+      "details": ""
+    },
+    {
+      "id": "27",
+      "name": "ار جي",
+      "category": "مستورد",
+      "price": 240,
+      "details": ""
+    },
+    {
+      "id": "28",
+      "name": "شملان أحمر",
+      "category": "مستورد",
+      "price": 420,
+      "details": ""
+    },
+    {
+      "id": "29",
+      "name": "شملان أزرق",
+      "category": "مستورد",
+      "price": "-",
+      "details": ""
+    },
+    {
+      "id": "30",
+      "name": "كاريلا أحمر",
+      "category": "مستورد",
+      "price": "-",
+      "details": ""
+    },
+    {
+      "id": "31",
+      "name": "كاريلا أزرق",
+      "category": "مستورد",
+      "price": "-",
+      "details": ""
+    }
+  ]
+}
