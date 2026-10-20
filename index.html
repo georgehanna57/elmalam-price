@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#10100f">
+  <meta name="description" content="منشئ قائمة أسعار المعلم — عدّل الأصناف والأسعار وصدّر صورة جاهزة للواتساب.">
+  <title>المعلم | منشئ قائمة الأسعار</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2310100f'/%3E%3Cpath d='M14 45h36M18 39l5-20 9 12 9-12 5 20z' fill='%23d7a937' stroke='%23f7df8a' stroke-width='2'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-mini"><span class="crown">♛</span><span>المعلم</span></div>
+    <div class="save-state" id="saveState"><span></span> محفوظ تلقائيًا</div>
+  </header>
+
+  <main class="workspace">
+    <section class="editor-panel" aria-label="تعديل قائمة الأسعار">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">لوحة التحكم</p>
+          <h1>جهّز قائمة أسعارك</h1>
+        </div>
+        <button class="ghost-btn" id="resetBtn" type="button">استرجاع المثال</button>
+      </div>
+
+      <div class="form-grid shop-fields">
+        <label>اسم القائمة<input id="shopName" maxlength="32" value="المعلم"></label>
+        <label>العنوان الفرعي<input id="subtitle" maxlength="52" value="قائمة أسعار السجائر"></label>
+        <label>رقم الطلبات<input id="phone" inputmode="tel" maxlength="24" value="01XXXXXXXXX"></label>
+        <label>ملاحظة قصيرة<input id="note" maxlength="64" value="الأسعار قابلة للتغيير حسب تحديثات السوق"></label>
+      </div>
+
+      <div class="products-head">
+        <div><p class="eyebrow">الأصناف</p><h2>المنتجات والأسعار</h2></div>
+        <div class="head-actions">
+          <button class="ghost-btn" id="exportPosBtn" type="button">⇩ ملف MicroPOS</button>
+          <button class="primary-btn" id="addBtn" type="button"><span>＋</span> إضافة صنف</button>
+        </div>
+      </div>
+      <div class="bulk-bar" aria-label="تعديل جماعي للأسعار">
+        <p class="bulk-title">تعديل جماعي</p>
+        <select id="bulkCategory" aria-label="الأصناف"></select>
+        <input id="bulkAmount" inputmode="decimal" placeholder="المبلغ" aria-label="المبلغ">
+        <select id="bulkUnit" aria-label="الوحدة"><option value="egp">ج.م</option><option value="pct">%</option></select>
+        <button class="ghost-btn" data-bulk="1" type="button">＋ زيادة</button>
+        <button class="ghost-btn" data-bulk="-1" type="button">− تخفيض</button>
+        <button class="ghost-btn" id="undoBulkBtn" type="button" hidden>↶ تراجع</button>
+      </div>
+      <p class="edit-hint">اضغط على السعر وعدّله مباشرة — Enter ينقلك للصنف اللي بعده. اكتب «-» لو الصنف مش متوفر.</p>
+      <div id="productList" class="product-list"></div>
+      <div class="empty-state" id="emptyState" hidden>لا توجد أصناف بعد. اضغط «إضافة صنف» للبدء.</div>
+    </section>
+
+    <aside class="preview-panel">
+      <div class="preview-toolbar">
+        <div><p class="eyebrow">معاينة فورية</p><h2>الصورة الجاهزة</h2></div>
+        <span class="ratio-pill">1080 × 1350</span>
+      </div>
+      <div class="canvas-wrap"><canvas id="priceCanvas" width="1080" height="1350" aria-label="معاينة قائمة الأسعار"></canvas></div>
+      <button class="download-btn" id="downloadBtn" type="button"><span>↗</span> مشاركة الصورة على واتساب</button>
+      <p class="privacy-note">على الموبايل اختر «واتساب بيزنس» من نافذة المشاركة.</p>
+    </aside>
+  </main>
+
+  <dialog id="productDialog">
+    <form method="dialog" id="productForm">
+      <div class="dialog-head"><div><p class="eyebrow" id="dialogEyebrow">صنف جديد</p><h2 id="dialogTitle">إضافة صنف</h2></div><button class="icon-btn close-dialog" value="cancel" aria-label="إغلاق">×</button></div>
+      <input type="hidden" id="productId">
+      <label>اسم الصنف<input id="productName" maxlength="34" required placeholder="مثال: كليوباترا بوكس"></label>
+      <div class="form-grid">
+        <label>الفئة<input id="productCategory" maxlength="22" placeholder="مثال: محلي"></label>
+        <label>السعر بالجنيه<input id="productPrice" inputmode="decimal" required placeholder="مثال: 480 أو -"></label>
+      </div>
+      <label>وصف اختياري<input id="productDetails" maxlength="38" placeholder="مثال: العلبة"></label>
+      <div class="dialog-actions"><button class="ghost-btn close-dialog" value="cancel" type="button">إلغاء</button><button class="primary-btn" value="default" type="submit">حفظ الصنف</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
