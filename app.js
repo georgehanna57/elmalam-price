@@ -37,11 +37,54 @@ const $=s=>document.querySelector(s); const list=$('#productList'),canvas=$('#pr
 const fields=['shopName','subtitle','phone','note'];
 
 function load(){try{return {...defaults,...JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')}}catch{return structuredClone(defaults)}}
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));renderCanvas(); const el=$('#saveState');el.innerHTML='<span></span> محفوظ تلقائيًا'}
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));renderCanvas();sync.dirty=true;saveSyncMeta();scheduleSync()}
+function applyFields(){fields.forEach(id=>{$('#'+id).value=state[id]||''})}
+
+// Shared price list: prices.json in the GitHub repo is the single source of truth.
+// Anyone can read it; saving needs a fine-grained token (Contents read/write on this repo only) kept in this browser.
+const REPO='georgehanna57/elmalam-price',DATA_PATH='prices.json',BRANCH='main',TOKEN_KEY='elmalam-gh-token',SYNC_KEY='elmalam-sync-meta';
+const API_URL=`https://api.github.com/repos/${REPO}/contents/${DATA_PATH}`;
+function readJSON(key){try{return JSON.parse(localStorage.getItem(key)||'{}')}catch{return {}}}
+let sync={sha:null,dirty:false,...readJSON(SYNC_KEY)},syncTimer=null,syncing=false;
+function saveSyncMeta(){localStorage.setItem(SYNC_KEY,JSON.stringify({sha:sync.sha,dirty:sync.dirty}))}
+function getToken(){return localStorage.getItem(TOKEN_KEY)||''}
+function ghHeaders(token=getToken()){const h={Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};if(token)h.Authorization=`Bearer ${token}`;return h}
+function encodeData(obj){const bytes=new TextEncoder().encode(JSON.stringify(obj,null,2)+'\n');let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));return btoa(bin)}
+function decodeData(b64){const bin=atob(b64.replace(/\s/g,''));return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0))))}
+function payload(){const {shopName,subtitle,phone,note,products}=state;return {shopName,subtitle,phone,note,products}}
+const SYNC_LABELS={synced:'متزامن مع GitHub',pending:'تعديلات لسه ماترفعتش',syncing:'جاري الرفع…',loading:'جاري تحميل الأسعار…',local:'محفوظ على الجهاز بس — اربط GitHub',offline:'مفيش نت — هيترفع لما يرجع',error:'فشل الرفع — دوس هنا'};
+function setSyncState(kind){const el=$('#saveState');el.dataset.state=kind;el.innerHTML=`<span></span> ${SYNC_LABELS[kind]}`}
+function scheduleSync(delay=2500){clearTimeout(syncTimer);if(!sync.dirty)return;if(!getToken()){setSyncState('local');return}setSyncState('pending');syncTimer=setTimeout(pushRemote,delay)}
+function applyRemote(data,sha){if(!data||!Array.isArray(data.products))throw new Error('ملف الأسعار مش سليم');state={...structuredClone(defaults),...data};sync.sha=sha;sync.dirty=false;localStorage.setItem(STORAGE_KEY,JSON.stringify(state));saveSyncMeta();applyFields();renderList()}
+async function fetchRemote(){const res=await fetch(`${API_URL}?ref=${BRANCH}`,{headers:ghHeaders(),cache:'no-store'});if(res.status===404)return null;if(!res.ok)throw Object.assign(new Error('fetch failed'),{status:res.status});const json=await res.json();return {data:decodeData(json.content),sha:json.sha}}
+async function pullRemote(){if(syncing)return;if(!navigator.onLine){setSyncState(sync.dirty?'offline':'synced');return}try{const remote=await fetchRemote();
+    // No shared file yet: this device's list becomes the first version once GitHub is linked
+    if(!remote){sync.sha=null;if(getToken())sync.dirty=true;saveSyncMeta();if(sync.dirty)scheduleSync(0);else setSyncState('local');return}
+    // Local edits not uploaded yet: keep them; pushRemote detects if the remote moved on meanwhile
+    if(sync.dirty){scheduleSync(0);return}
+    if(remote.sha!==sync.sha){applyRemote(remote.data,remote.sha);toast('تم تحميل آخر أسعار')}setSyncState('synced')}
+  catch(err){
+    // API rate limit or outage: fall back to the copy GitHub Pages serves (read-only, may lag a minute)
+    if(!sync.dirty){try{const res=await fetch(`./${DATA_PATH}?t=${Date.now()}`,{cache:'no-store'});if(res.ok)applyRemote(await res.json(),sync.sha)}catch{}}
+    setSyncState(sync.dirty?'pending':'synced')}}
+async function pushRemote(){if(syncing){scheduleSync();return}if(!sync.dirty)return;const token=getToken();if(!token){setSyncState('local');return}if(!navigator.onLine){setSyncState('offline');return}
+  syncing=true;setSyncState('syncing');
+  try{const body={message:`تحديث الأسعار — ${new Date().toLocaleString('ar-EG')}`,content:encodeData(payload()),branch:BRANCH};if(sync.sha)body.sha=sync.sha;
+    const res=await fetch(API_URL,{method:'PUT',headers:{...ghHeaders(token),'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(res.ok){const json=await res.json();sync.sha=json.content.sha;sync.dirty=false;saveSyncMeta();setSyncState('synced');return}
+    if(res.status===401||res.status===403){setSyncState('error');toast('التوكن مش شغال أو ملوش صلاحية — اربطه تاني');openTokenDialog();return}
+    if(res.status===409||res.status===422){await resolveConflict();return}
+    throw new Error(`GitHub ${res.status}`)}
+  catch(err){setSyncState(navigator.onLine?'error':'offline')}
+  finally{syncing=false}}
+// Another device saved since this one last synced: let the user pick which version wins
+async function resolveConflict(){const remote=await fetchRemote();if(!remote){sync.sha=null;syncing=false;return pushRemote()}
+  if(confirm('في أسعار اتعدلت من جهاز تاني بعد آخر مزامنة هنا.\n\nموافق = ارفع تعديلاتي أنا فوقها\nإلغاء = سيب تعديلاتي وحمّل النسخة الأحدث')){sync.sha=remote.sha;saveSyncMeta();syncing=false;return pushRemote()}
+  applyRemote(remote.data,remote.sha);setSyncState('synced');toast('تم تحميل النسخة الأحدث')}
 function escapeHtml(v){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function money(v){return String(v).trim()==='-'?'—':new Intl.NumberFormat('ar-EG',{maximumFractionDigits:2}).format(Number(v)||0)}
 function priceLabel(v){const value=money(v);return value==='—'?'—':`${value} ج.م`}
-function initFields(){fields.forEach(id=>{const el=$('#'+id);el.value=state[id]||'';el.addEventListener('input',()=>{state[id]=el.value;save()})})}
+function initFields(){applyFields();fields.forEach(id=>{const el=$('#'+id);el.addEventListener('input',()=>{state[id]=el.value;save()})})}
 function renderList(){list.innerHTML=state.products.map((p,i)=>`<article class="product-row" data-id="${p.id}"><div class="order-buttons"><button data-act="up" ${i===0?'disabled':''} aria-label="تحريك لأعلى">▲</button><button data-act="down" ${i===state.products.length-1?'disabled':''} aria-label="تحريك لأسفل">▼</button></div><div class="product-info"><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml([p.category,p.details].filter(Boolean).join(' · ')||'بدون وصف')}</small></div><div class="product-price"><input class="price-input" value="${escapeHtml(p.price)}" inputmode="decimal" enterkeyhint="next" aria-label="سعر ${escapeHtml(p.name)}"><span>ج.م</span></div><div class="row-actions"><button class="icon-btn" data-act="edit" aria-label="تعديل">✎</button><button class="icon-btn delete" data-act="delete" aria-label="حذف">⌫</button></div></article>`).join('');$('#emptyState').hidden=state.products.length>0;renderBulkCategories();renderCanvas()}
 function openDialog(product){$('#productId').value=product?.id||'';$('#productName').value=product?.name||'';$('#productCategory').value=product?.category||'';$('#productPrice').value=product?.price??'';$('#productDetails').value=product?.details||'';$('#dialogEyebrow').textContent=product?'تعديل الصنف':'صنف جديد';$('#dialogTitle').textContent=product?'تعديل البيانات':'إضافة صنف';$('#productDialog').showModal();setTimeout(()=>$('#productName').focus(),50)}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.remove('show'),2200)}
@@ -62,7 +105,21 @@ $('#undoBulkBtn').addEventListener('click',()=>{if(!bulkUndo)return;bulkUndo.for
 
 $('#addBtn').addEventListener('click',()=>openDialog());document.querySelectorAll('.close-dialog').forEach(b=>b.addEventListener('click',()=>$('#productDialog').close()));
 $('#productForm').addEventListener('submit',e=>{e.preventDefault();const id=$('#productId').value;const rawPrice=$('#productPrice').value.trim();const price=rawPrice==='-'?'-':Number(rawPrice);const item={id:id||String(Date.now()),name:$('#productName').value.trim(),category:$('#productCategory').value.trim(),price,details:$('#productDetails').value.trim()};if(!item.name||(price!=='-'&&!Number.isFinite(price)))return;const i=state.products.findIndex(p=>p.id===id);if(i>=0)state.products[i]=item;else state.products.push(item);save();renderList();$('#productDialog').close();toast(id?'تم تحديث الصنف':'تمت إضافة الصنف')});
-$('#resetBtn').addEventListener('click',()=>{if(!confirm('هل تريد استرجاع البيانات التجريبية؟'))return;state=structuredClone(defaults);initFields();save();renderList();toast('تم استرجاع المثال')});
+$('#resetBtn').addEventListener('click',()=>{if(!confirm('هل تريد استرجاع البيانات التجريبية؟'))return;state=structuredClone(defaults);applyFields();save();renderList();toast('تم استرجاع المثال')});
+
+// GitHub link: the token never leaves this browser except in requests to api.github.com
+function openTokenDialog(){$('#tokenInput').value='';$('#unlinkBtn').hidden=!getToken();$('#tokenDialog').showModal()}
+$('#saveState').addEventListener('click',()=>{if(!getToken())return openTokenDialog();if(sync.dirty)return pushRemote();pullRemote()});
+$('#tokenForm').addEventListener('submit',async e=>{e.preventDefault();const token=$('#tokenInput').value.trim();if(!token)return;const btn=$('#tokenSaveBtn');btn.disabled=true;
+  try{const res=await fetch(`https://api.github.com/repos/${REPO}`,{headers:ghHeaders(token),cache:'no-store'});const repo=res.ok?await res.json():null;
+    if(!repo?.permissions?.push){toast('التوكن ده مايقدرش يعدّل الـ repo — راجع الصلاحيات');return}
+    localStorage.setItem(TOKEN_KEY,token);$('#tokenDialog').close();toast('تم الربط مع GitHub');await pullRemote();scheduleSync(0)}
+  catch{toast('تعذر الاتصال بـ GitHub')}finally{btn.disabled=false}});
+$('#unlinkBtn').addEventListener('click',()=>{localStorage.removeItem(TOKEN_KEY);$('#tokenDialog').close();setSyncState(sync.dirty?'local':'synced');toast('تم فصل الربط من الجهاز ده')});
+document.querySelectorAll('.close-token').forEach(b=>b.addEventListener('click',()=>$('#tokenDialog').close()));
+// Pick up edits made on other devices when coming back to the tab, and retry uploads when the connection returns
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pullRemote()});
+window.addEventListener('online',()=>sync.dirty?scheduleSync(0):pullRemote());
 
 function roundRect(x,y,w,h,r,fill,stroke){ctx.beginPath();ctx.roundRect(x,y,w,h,r);if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=1;ctx.stroke()}}
 function fitText(text,maxWidth,startSize,minSize=24,weight=700){let size=startSize;do{ctx.font=`${weight} ${size}px Tahoma, Arial`;if(ctx.measureText(text).width<=maxWidth)return size;size-=2}while(size>minSize);return minSize}
@@ -81,4 +138,4 @@ const POS_COLUMNS=['كود الصنف','اسم الصنف','السعر','الف�
 $('#exportPosBtn').addEventListener('click',()=>{if(!window.XLSX){toast('تعذر تحميل مكتبة الإكسل — تأكد من الإنترنت');return}const priced=state.products.filter(p=>String(p.price).trim()!=='-');if(!priced.length){toast('لا توجد أصناف بأسعار للتصدير');return}const rows=priced.map(p=>[p.id,p.name,Number(p.price),p.category||'',p.details||'']);const sheet=XLSX.utils.aoa_to_sheet([POS_COLUMNS,...rows]);sheet['!cols']=[{wch:14},{wch:28},{wch:10},{wch:12},{wch:20}];const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,sheet,'products');XLSX.writeFile(book,'mpo.xls',{bookType:'biff8'});const skipped=state.products.length-priced.length;toast(`تم تصدير ${priced.length} صنف${skipped?` — تم تخطي ${skipped} بدون سعر`:''}`)});
 
 function registerWebMCP(){const mc=document.modelContext;if(!mc?.registerTool)return;const safe=fn=>input=>{try{return fn(input||{})}catch(err){throw new Error(err.message)}};mc.registerTool({name:'add_price_item',title:'إضافة صنف',description:'يضيف صنفًا جديدًا إلى قائمة الأسعار الظاهرة.',inputSchema:{type:'object',properties:{name:{type:'string'},price:{type:'number'},category:{type:'string'},details:{type:'string'}},required:['name','price'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:safe(({name,price,category='',details=''})=>{if(!String(name).trim()||!Number.isFinite(price)||price<0)throw new Error('بيانات الصنف غير صحيحة');const item={id:String(Date.now()),name:String(name).trim(),price,category:String(category),details:String(details)};state.products.push(item);save();renderList();return {added:true,id:item.id,count:state.products.length}})});mc.registerTool({name:'update_price_item',title:'تعديل سعر صنف',description:'يعدّل بيانات صنف موجود بالاسم.',inputSchema:{type:'object',properties:{currentName:{type:'string'},name:{type:'string'},price:{type:'number'},category:{type:'string'},details:{type:'string'}},required:['currentName'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute:safe(input=>{const item=state.products.find(p=>p.name===input.currentName);if(!item)throw new Error('الصنف غير موجود');['name','price','category','details'].forEach(k=>{if(input[k]!==undefined)item[k]=input[k]});save();renderList();return {updated:true,item}})})}
-initFields();renderList();save();registerWebMCP();
+initFields();renderList();setSyncState('loading');pullRemote();registerWebMCP();

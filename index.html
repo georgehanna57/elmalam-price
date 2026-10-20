@@ -12,7 +12,7 @@
 <body>
   <header class="topbar">
     <div class="brand-mini"><span class="crown">♛</span><span>المعلم</span></div>
-    <div class="save-state" id="saveState"><span></span> محفوظ تلقائيًا</div>
+    <button class="save-state" id="saveState" type="button" data-state="loading"><span></span> جاري تحميل الأسعار…</button>
   </header>
 
   <main class="workspace">
@@ -75,6 +75,20 @@
       </div>
       <label>وصف اختياري<input id="productDetails" maxlength="38" placeholder="مثال: العلبة"></label>
       <div class="dialog-actions"><button class="ghost-btn close-dialog" value="cancel" type="button">إلغاء</button><button class="primary-btn" value="default" type="submit">حفظ الصنف</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="tokenDialog">
+    <form id="tokenForm">
+      <div class="dialog-head"><div><p class="eyebrow">المزامنة</p><h2>ربط الجهاز ده بـ GitHub</h2></div><button class="icon-btn close-token" type="button" aria-label="إغلاق">×</button></div>
+      <ol class="token-steps">
+        <li>افتح <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">إنشاء Fine-grained token</a> على GitHub.</li>
+        <li>في <b>Repository access</b> اختار <b>Only select repositories</b> ← <code dir="ltr">elmalam-price</code> بس.</li>
+        <li>في <b>Permissions</b> ← <b>Contents</b> اختار <b>Read and write</b>.</li>
+        <li>انسخ التوكن وحطه هنا. بيتحفظ على الجهاز ده بس.</li>
+      </ol>
+      <label>التوكن<input id="tokenInput" type="password" autocomplete="off" spellcheck="false" placeholder="github_pat_…" dir="ltr"></label>
+      <div class="dialog-actions"><button class="ghost-btn" id="unlinkBtn" type="button" hidden>فصل الربط</button><button class="primary-btn" id="tokenSaveBtn" type="submit">ربط</button></div>
     </form>
   </dialog>
 
