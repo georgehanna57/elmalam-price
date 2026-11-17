@@ -29,7 +29,7 @@
       "id": "4",
       "name": "سوبر",
       "category": "المصري",
-      "price": 0,
+      "price": "-",
       "details": ""
     },
     {
@@ -92,21 +92,21 @@
       "id": "13",
       "name": "ونيستون أحمر",
       "category": "المصري",
-      "price": 770,
+      "price": 765,
       "details": ""
     },
     {
       "id": "14",
       "name": "ونيستون أزرق",
       "category": "المصري",
-      "price": 770,
+      "price": 765,
       "details": ""
     },
     {
       "id": "15",
       "name": "ونيستون أبيض",
       "category": "المصري",
-      "price": 770,
+      "price": 765,
       "details": ""
     },
     {
